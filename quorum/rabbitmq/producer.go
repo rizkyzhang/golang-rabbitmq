@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Producer interface {
@@ -14,16 +14,16 @@ type Producer interface {
 }
 
 type baseProducer struct {
-	broker *amqp091.Connection
-	ch     *amqp091.Channel
+	broker *amqp.Connection
+	ch     *amqp.Channel
 	prefix string
 }
 
-func NewProducer(broker *amqp091.Connection, prefix string) Producer {
+func NewProducer(broker *amqp.Connection, prefix string) Producer {
 	return &baseProducer{broker: broker, prefix: prefix}
 }
 
-func (b *baseProducer) getChannel() (*amqp091.Channel, error) {
+func (b *baseProducer) getChannel() (*amqp.Channel, error) {
 	if b.ch == nil || b.ch.IsClosed() {
 		ch, err := b.broker.Channel()
 		if err != nil {
@@ -36,7 +36,7 @@ func (b *baseProducer) getChannel() (*amqp091.Channel, error) {
 	return b.ch, nil
 }
 
-func (b *baseProducer) declareExchange(ch *amqp091.Channel, exchangeType string, exchangeName string) error {
+func (b *baseProducer) declareExchange(ch *amqp.Channel, exchangeType string, exchangeName string) error {
 	err := ch.ExchangeDeclare(
 		exchangeName, // name
 		exchangeType, // type
@@ -76,7 +76,7 @@ func (b *baseProducer) PublishFanout(ctx context.Context, _exchangeName string, 
 		"",           // routing key
 		false,        // mandatory
 		false,        // immediate
-		amqp091.Publishing{
+		amqp.Publishing{
 			Body:        payload,
 			ContentType: "application/json",
 		})
@@ -108,7 +108,7 @@ func (b *baseProducer) PublishDirect(ctx context.Context, _exchangeName string, 
 		routingKey,   // routing key
 		false,        // mandatory
 		false,        // immediate
-		amqp091.Publishing{
+		amqp.Publishing{
 			Body:        payload,
 			ContentType: "application/json",
 		})

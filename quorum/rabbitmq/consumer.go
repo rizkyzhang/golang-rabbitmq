@@ -3,26 +3,26 @@ package rabbitmq
 import (
 	"fmt"
 
-	"github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Consumer interface {
-	ConsumeFanout(_exchangeName string, onMessage func(msg amqp091.Delivery) error) error
-	ConsumeDirect(_exchangeName, routingKey string, onMessage func(msg amqp091.Delivery) error) error
+	ConsumeFanout(_exchangeName string, onMessage func(msg amqp.Delivery) error) error
+	ConsumeDirect(_exchangeName, routingKey string, onMessage func(msg amqp.Delivery) error) error
 }
 
 type baseConsumer struct {
-	broker *amqp091.Connection
-	ch     *amqp091.Channel
+	broker *amqp.Connection
+	ch     *amqp.Channel
 	group  string
 	prefix string
 }
 
-func NewConsumer(broker *amqp091.Connection, prefix, group string) Consumer {
+func NewConsumer(broker *amqp.Connection, prefix, group string) Consumer {
 	return &baseConsumer{broker: broker, prefix: prefix, group: group}
 }
 
-func (b *baseConsumer) getChannel() (*amqp091.Channel, error) {
+func (b *baseConsumer) getChannel() (*amqp.Channel, error) {
 	if b.ch == nil || b.ch.IsClosed() {
 		ch, err := b.broker.Channel()
 		if err != nil {
@@ -35,7 +35,7 @@ func (b *baseConsumer) getChannel() (*amqp091.Channel, error) {
 	return b.ch, nil
 }
 
-func (b *baseConsumer) declareExchange(ch *amqp091.Channel, exchangeType string, exchangeName string) error {
+func (b *baseConsumer) declareExchange(ch *amqp.Channel, exchangeType string, exchangeName string) error {
 	err := ch.ExchangeDeclare(
 		exchangeName, // name
 		exchangeType, // type
@@ -52,26 +52,26 @@ func (b *baseConsumer) declareExchange(ch *amqp091.Channel, exchangeType string,
 	return nil
 }
 
-func (b *baseConsumer) declareQueue(ch *amqp091.Channel, exchangeName string) (amqp091.Queue, error) {
+func (b *baseConsumer) declareQueue(ch *amqp.Channel, exchangeName string) (amqp.Queue, error) {
 	queue, err := ch.QueueDeclare(
 		fmt.Sprintf("%s.%s.queue", exchangeName, b.group), // name
 		true,  // durable
 		false, // auto-delete
 		false, // exclusive
 		false, // no-wait
-		amqp091.Table{
+		amqp.Table{
 			"x-queue-type":     "quorum",
 			"x-delivery-limit": 5,
 		}, // args
 	)
 	if err != nil {
-		return amqp091.Queue{}, err
+		return amqp.Queue{}, err
 	}
 
 	return queue, nil
 }
 
-func (b *baseConsumer) bindQueue(ch *amqp091.Channel, queueName, exchangeName, routingKey string) error {
+func (b *baseConsumer) bindQueue(ch *amqp.Channel, queueName, exchangeName, routingKey string) error {
 	err := ch.QueueBind(
 		queueName,    // queue-name
 		routingKey,   // routing-key
@@ -86,7 +86,7 @@ func (b *baseConsumer) bindQueue(ch *amqp091.Channel, queueName, exchangeName, r
 	return nil
 }
 
-func (b *baseConsumer) ConsumeFanout(_exchangeName string, onMessage func(msg amqp091.Delivery) error) error {
+func (b *baseConsumer) ConsumeFanout(_exchangeName string, onMessage func(msg amqp.Delivery) error) error {
 	ch, err := b.getChannel()
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (b *baseConsumer) ConsumeFanout(_exchangeName string, onMessage func(msg am
 	return nil
 }
 
-func (b *baseConsumer) ConsumeDirect(_exchangeName, routingKey string, onMessage func(msg amqp091.Delivery) error) error {
+func (b *baseConsumer) ConsumeDirect(_exchangeName, routingKey string, onMessage func(msg amqp.Delivery) error) error {
 	ch, err := b.getChannel()
 	if err != nil {
 		return err
