@@ -1,1 +1,1 @@
-Implementation of rabbitmq producer and consumer written in Golang.
+Implementation of rabbitmq producer and consumer util written in Golang.
